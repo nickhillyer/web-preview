@@ -75,11 +75,11 @@
         }
 
         .code-view {
-            background-color: #282c34;
+            background-color: white;
             color: #abb2bf;
             padding: 16px;
             font-family: 'Courier New', Courier, monospace;
-            font-size: 14px;
+            font-size: 16px;
             width: 100%;
             min-height: calc(100vh - 60px);
             border: none;
@@ -126,14 +126,14 @@
 </head>
 <body>
     <div class="toolbar">
-        <button id="pasteBtn" title="Paste HTML from clipboard">📋 Paste</button>
-        <button id="copyBtn" title="Copy HTML to clipboard" disabled>📄 Copy</button>
-        <button id="toggleBtn" class="toggle hidden" title="Toggle between code and preview">🔄 Toggle View</button>
+        <button id="pasteBtn" title="Paste HTML from clipboard">Paste</button>
+        <button id="copyBtn" title="Copy HTML to clipboard" disabled>Copy</button>
+        <button id="toggleBtn" class="toggle hidden" title="Toggle between code and preview">Toggle View</button>
     </div>
 
     <div class="content-container">
         <div id="emptyState" class="empty-state">
-            <p>👆 Click the "Paste" button to load HTML from your clipboard</p>
+            <p>Click the "Paste" button to load HTML from your clipboard</p>
             <p>or paste using Ctrl+V (Cmd+V on Mac)</p>
         </div>
         <textarea id="codeView" class="code-view hidden"></textarea>
@@ -212,13 +212,13 @@
                 codeView.value = htmlContent;
                 codeView.classList.remove('hidden');
                 previewView.classList.add('hidden');
-                toggleBtn.textContent = '👁️ Preview';
+                toggleBtn.textContent = 'Preview';
             } else {
                 // Show preview view
                 previewView.innerHTML = htmlContent;
                 previewView.classList.remove('hidden');
                 codeView.classList.add('hidden');
-                toggleBtn.textContent = '📝 Code';
+                toggleBtn.textContent = 'Code';
             }
         }
     </script>
