@@ -57,18 +57,6 @@
             cursor: not-allowed;
         }
 
-        .toolbar button.toggle {
-            background-color: #27ae60;
-        }
-
-        .toolbar button.toggle:hover {
-            background-color: #229954;
-        }
-
-        .toolbar button.toggle:active {
-            background-color: #1e8449;
-        }
-
         .content-container {
             margin-top: 60px;
             padding: 16px;
@@ -82,18 +70,12 @@
             border-radius: 4px;
             font-family: 'Courier New', Courier, monospace;
             font-size: 14px;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            overflow-x: auto;
+            border: none;
+            outline: none;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .preview-view {
-            background-color: white;
-            padding: 16px;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            min-height: 200px;
+            width: 100%;
+            min-height: calc(100vh - 92px);
+            resize: vertical;
         }
 
         .empty-state {
@@ -126,8 +108,7 @@
                 padding: 12px;
             }
 
-            .code-view,
-            .preview-view {
+            .code-view {
                 padding: 12px;
                 font-size: 13px;
             }
@@ -138,7 +119,6 @@
     <div class="toolbar">
         <button id="pasteBtn" title="Paste HTML from clipboard">📋 Paste</button>
         <button id="copyBtn" title="Copy HTML to clipboard" disabled>📄 Copy</button>
-        <button id="toggleBtn" class="toggle hidden" title="Toggle between code and preview">🔄 Toggle View</button>
     </div>
 
     <div class="content-container">
@@ -146,31 +126,24 @@
             <p>👆 Click the "Paste" button to load HTML from your clipboard</p>
             <p>or paste using Ctrl+V (Cmd+V on Mac)</p>
         </div>
-        <div id="codeView" class="code-view hidden"></div>
-        <div id="previewView" class="preview-view hidden"></div>
+        <textarea id="codeView" class="code-view hidden" placeholder="Your HTML code will appear here. You can edit it directly."></textarea>
     </div>
 
     <script>
-        let htmlContent = '';
-        let isCodeView = true;
-
         const pasteBtn = document.getElementById('pasteBtn');
         const copyBtn = document.getElementById('copyBtn');
-        const toggleBtn = document.getElementById('toggleBtn');
         const emptyState = document.getElementById('emptyState');
         const codeView = document.getElementById('codeView');
-        const previewView = document.getElementById('previewView');
 
         // Paste button click handler
         pasteBtn.addEventListener('click', async () => {
             try {
                 const text = await navigator.clipboard.readText();
                 if (text.trim()) {
-                    htmlContent = text;
-                    updateView();
+                    codeView.value = text;
                     copyBtn.disabled = false;
-                    toggleBtn.classList.remove('hidden');
                     emptyState.classList.add('hidden');
+                    codeView.classList.remove('hidden');
                 }
             } catch (err) {
                 alert('Failed to read clipboard. Please make sure you granted clipboard permissions or use Ctrl+V (Cmd+V on Mac) to paste.');
@@ -181,7 +154,7 @@
         // Copy button click handler
         copyBtn.addEventListener('click', async () => {
             try {
-                await navigator.clipboard.writeText(htmlContent);
+                await navigator.clipboard.writeText(codeView.value);
                 const originalText = copyBtn.textContent;
                 copyBtn.textContent = '✓ Copied!';
                 setTimeout(() => {
@@ -193,39 +166,29 @@
             }
         });
 
-        // Toggle button click handler
-        toggleBtn.addEventListener('click', () => {
-            isCodeView = !isCodeView;
-            updateView();
-        });
-
         // Keyboard paste handler (Ctrl+V / Cmd+V)
         document.addEventListener('paste', (e) => {
-            const text = e.clipboardData.getData('text/plain');
-            if (text.trim()) {
-                htmlContent = text;
-                updateView();
-                copyBtn.disabled = false;
-                toggleBtn.classList.remove('hidden');
-                emptyState.classList.add('hidden');
+            // Only handle paste if not already focused in the textarea
+            if (document.activeElement !== codeView) {
+                const text = e.clipboardData.getData('text/plain');
+                if (text.trim()) {
+                    codeView.value = text;
+                    copyBtn.disabled = false;
+                    emptyState.classList.add('hidden');
+                    codeView.classList.remove('hidden');
+                    e.preventDefault();
+                }
             }
         });
 
-        function updateView() {
-            if (isCodeView) {
-                // Show code view
-                codeView.textContent = htmlContent;
-                codeView.classList.remove('hidden');
-                previewView.classList.add('hidden');
-                toggleBtn.textContent = '👁️ Preview';
+        // Enable copy button when user types in the textarea
+        codeView.addEventListener('input', () => {
+            if (codeView.value.trim()) {
+                copyBtn.disabled = false;
             } else {
-                // Show preview view
-                previewView.innerHTML = htmlContent;
-                previewView.classList.remove('hidden');
-                codeView.classList.add('hidden');
-                toggleBtn.textContent = '📝 Code';
+                copyBtn.disabled = true;
             }
-        }
+        });
     </script>
 </body>
 </html>
