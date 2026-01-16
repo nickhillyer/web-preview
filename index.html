@@ -126,7 +126,7 @@
             <p>👆 Click the "Paste" button to load HTML from your clipboard</p>
             <p>or paste using Ctrl+V (Cmd+V on Mac)</p>
         </div>
-        <textarea id="codeView" class="code-view hidden" placeholder="Your HTML code will appear here. You can edit it directly."></textarea>
+        <textarea id="codeView" class="code-view hidden" placeholder="Your HTML code will appear here. You can edit it directly." aria-label="HTML code editor"></textarea>
     </div>
 
     <script>
@@ -169,6 +169,7 @@
         // Keyboard paste handler (Ctrl+V / Cmd+V)
         document.addEventListener('paste', (e) => {
             // Only handle paste if not already focused in the textarea
+            // to avoid double-pasting (textarea handles its own paste events)
             if (document.activeElement !== codeView) {
                 const text = e.clipboardData.getData('text/plain');
                 if (text.trim()) {
