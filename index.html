@@ -71,7 +71,6 @@
 
         .content-container {
             margin-top: 60px;
-            padding: 16px;
             min-height: calc(100vh - 60px);
         }
 
@@ -79,21 +78,18 @@
             background-color: #282c34;
             color: #abb2bf;
             padding: 16px;
-            border-radius: 4px;
             font-family: 'Courier New', Courier, monospace;
             font-size: 14px;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            overflow-x: auto;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            min-height: calc(100vh - 60px);
+            border: none;
+            outline: none;
+            resize: vertical;
         }
 
         .preview-view {
             background-color: white;
-            padding: 16px;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            min-height: 200px;
+            min-height: calc(100vh - 60px);
         }
 
         .empty-state {
@@ -122,13 +118,7 @@
                 font-size: 13px;
             }
 
-            .content-container {
-                padding: 12px;
-            }
-
-            .code-view,
-            .preview-view {
-                padding: 12px;
+            .code-view {
                 font-size: 13px;
             }
         }
@@ -146,7 +136,7 @@
             <p>👆 Click the "Paste" button to load HTML from your clipboard</p>
             <p>or paste using Ctrl+V (Cmd+V on Mac)</p>
         </div>
-        <div id="codeView" class="code-view hidden"></div>
+        <textarea id="codeView" class="code-view hidden"></textarea>
         <div id="previewView" class="preview-view hidden"></div>
     </div>
 
@@ -199,6 +189,11 @@
             updateView();
         });
 
+        // Sync textarea changes back to htmlContent
+        codeView.addEventListener('input', () => {
+            htmlContent = codeView.value;
+        });
+
         // Keyboard paste handler (Ctrl+V / Cmd+V)
         document.addEventListener('paste', (e) => {
             const text = e.clipboardData.getData('text/plain');
@@ -214,7 +209,7 @@
         function updateView() {
             if (isCodeView) {
                 // Show code view
-                codeView.textContent = htmlContent;
+                codeView.value = htmlContent;
                 codeView.classList.remove('hidden');
                 previewView.classList.add('hidden');
                 toggleBtn.textContent = '👁️ Preview';
