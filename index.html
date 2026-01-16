@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Preview</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f5f5f5;
+        }
+
+        .toolbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background-color: #2c3e50;
+            padding: 12px 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .toolbar button {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            white-space: nowrap;
+        }
+
+        .toolbar button:hover {
+            background-color: #2980b9;
+        }
+
+        .toolbar button:active {
+            background-color: #21618c;
+        }
+
+        .toolbar button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        .toolbar button.toggle {
+            background-color: #27ae60;
+        }
+
+        .toolbar button.toggle:hover {
+            background-color: #229954;
+        }
+
+        .toolbar button.toggle:active {
+            background-color: #1e8449;
+        }
+
+        .content-container {
+            margin-top: 60px;
+            padding: 16px;
+            min-height: calc(100vh - 60px);
+        }
+
+        .code-view {
+            background-color: #282c34;
+            color: #abb2bf;
+            padding: 16px;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-x: auto;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .preview-view {
+            background-color: white;
+            padding: 16px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            min-height: 200px;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #7f8c8d;
+            padding: 60px 20px;
+            font-size: 16px;
+        }
+
+        .empty-state p {
+            margin-bottom: 10px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .toolbar {
+                padding: 10px;
+                gap: 8px;
+            }
+
+            .toolbar button {
+                padding: 8px 16px;
+                font-size: 13px;
+            }
+
+            .content-container {
+                padding: 12px;
+            }
+
+            .code-view,
+            .preview-view {
+                padding: 12px;
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <button id="pasteBtn" title="Paste HTML from clipboard">📋 Paste</button>
+        <button id="copyBtn" title="Copy HTML to clipboard" disabled>📄 Copy</button>
+        <button id="toggleBtn" class="toggle hidden" title="Toggle between code and preview">🔄 Toggle View</button>
+    </div>
+
+    <div class="content-container">
+        <div id="emptyState" class="empty-state">
+            <p>👆 Click the "Paste" button to load HTML from your clipboard</p>
+            <p>or paste using Ctrl+V (Cmd+V on Mac)</p>
+        </div>
+        <div id="codeView" class="code-view hidden"></div>
+        <div id="previewView" class="preview-view hidden"></div>
+    </div>
+
+    <script>
+        let htmlContent = '';
+        let isCodeView = true;
+
+        const pasteBtn = document.getElementById('pasteBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const toggleBtn = document.getElementById('toggleBtn');
+        const emptyState = document.getElementById('emptyState');
+        const codeView = document.getElementById('codeView');
+        const previewView = document.getElementById('previewView');
+
+        // Paste button click handler
+        pasteBtn.addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                if (text.trim()) {
+                    htmlContent = text;
+                    updateView();
+                    copyBtn.disabled = false;
+                    toggleBtn.classList.remove('hidden');
+                    emptyState.classList.add('hidden');
+                }
+            } catch (err) {
+                alert('Failed to read clipboard. Please make sure you granted clipboard permissions or use Ctrl+V (Cmd+V on Mac) to paste.');
+                console.error('Failed to read clipboard:', err);
+            }
+        });
+
+        // Copy button click handler
+        copyBtn.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(htmlContent);
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = '✓ Copied!';
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                }, 2000);
+            } catch (err) {
+                alert('Failed to copy to clipboard');
+                console.error('Failed to copy:', err);
+            }
+        });
+
+        // Toggle button click handler
+        toggleBtn.addEventListener('click', () => {
+            isCodeView = !isCodeView;
+            updateView();
+        });
+
+        // Keyboard paste handler (Ctrl+V / Cmd+V)
+        document.addEventListener('paste', (e) => {
+            const text = e.clipboardData.getData('text/plain');
+            if (text.trim()) {
+                htmlContent = text;
+                updateView();
+                copyBtn.disabled = false;
+                toggleBtn.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+            }
+        });
+
+        function updateView() {
+            if (isCodeView) {
+                // Show code view
+                codeView.textContent = htmlContent;
+                codeView.classList.remove('hidden');
+                previewView.classList.add('hidden');
+                toggleBtn.textContent = '👁️ Preview';
+            } else {
+                // Show preview view
+                previewView.innerHTML = htmlContent;
+                previewView.classList.remove('hidden');
+                codeView.classList.add('hidden');
+                toggleBtn.textContent = '📝 Code';
+            }
+        }
+    </script>
+</body>
+</html>
