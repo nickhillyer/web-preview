@@ -13,7 +13,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: #f5f5f5;
+            background-color: #f0f2f5;
             overflow: hidden; 
             display: flex;
             flex-direction: column;
@@ -22,45 +22,48 @@
 
         .toolbar {
             position: relative;
-            background-color: #2c3e50;
-            padding: 12px 16px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            background-color: #ffffff;
+            padding: 10px 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             z-index: 1000;
             display: flex;
             gap: 10px;
             align-items: center;
             flex-shrink: 0;
+            border-bottom: 1px solid #ddd;
         }
 
         .toolbar button {
             padding: 8px 16px;
-            background-color: #3498db;
+            background-color: #007bff;
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             font-size: 14px;
             font-weight: 500;
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: all 0.2s;
         }
 
-        .toolbar button:hover { background-color: #2980b9; }
-        .toolbar button.toggle { background-color: #27ae60; }
-        .toolbar button:disabled { background-color: #7f8c8d; cursor: not-allowed; }
+        .toolbar button:hover { background-color: #0056b3; }
+        .toolbar button.toggle { background-color: #28a745; }
+        .toolbar button.toggle:hover { background-color: #218838; }
+        .toolbar button:disabled { background-color: #ccc; cursor: not-allowed; }
         
         .content-container {
             flex-grow: 1;
             width: 100%;
             position: relative;
             overflow: hidden;
+            background-color: #ffffff;
         }
 
         .code-view {
-            background-color: #1e1e1e;
-            color: #d4d4d4;
+            background-color: #f8f9fa; /* Light theme background */
+            color: #212529; /* Dark text for light theme */
             padding: 20px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 16px; 
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 15px; 
             width: 100%;
             height: 100%;
             border: none;
@@ -69,6 +72,7 @@
             display: block;
             white-space: pre;
             overflow: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .preview-view {
@@ -85,9 +89,10 @@
             left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
-            color: #7f8c8d;
+            color: #6c757d;
             width: 100%;
-            pointer-events: none;
+            pointer-events: none; /* Let's you click through to the textarea */
+            z-index: 5;
         }
 
         .hidden { display: none !important; }
@@ -102,10 +107,10 @@
 
     <div class="content-container">
         <div id="emptyState" class="empty-state">
-            <p>Click "Paste" or press Ctrl+V to start</p>
+            <p>Tap here to paste or click "Paste" button</p>
         </div>
         
-        <textarea id="codeView" class="code-view hidden" spellcheck="false" wrap="off"></textarea>
+        <textarea id="codeView" class="code-view" spellcheck="false" wrap="off"></textarea>
         
         <iframe id="previewView" class="preview-view hidden"></iframe>
     </div>
@@ -149,32 +154,36 @@
             }
         }
 
-        // Improved Paste Logic
+        // Updated Robust Paste Logic
         pasteBtn.addEventListener('click', async () => {
             try {
-                // Check if browser supports permissions API
-                if (navigator.permissions) {
-                    const result = await navigator.permissions.query({ name: 'clipboard-read' });
-                    if (result.state === 'denied') {
-                        alert('Clipboard access denied. Please use Ctrl+V / Cmd+V to paste manually.');
-                        return;
+                if (navigator.clipboard && navigator.clipboard.readText) {
+                    const text = await navigator.clipboard.readText();
+                    if (text) {
+                        handleNewContent(text);
+                    } else {
+                        throw new Error('Clipboard empty');
                     }
+                } else {
+                    throw new Error('Clipboard API restricted');
                 }
-                
-                const text = await navigator.clipboard.readText();
-                handleNewContent(text);
             } catch (err) {
-                console.error('Paste error:', err);
-                // Fallback for browsers that don't support readText or need user gesture
-                alert('For security, your browser requires you to use Ctrl+V (or Cmd+V) to paste into the editor.');
+                console.warn('Programmatic paste failed:', err);
+                // Security fallback: focus the area so the user can paste manually
+                codeView.focus();
+                alert('Browser security requires manual paste. Please press Ctrl+V (Cmd+V) or long-press inside the editor to Paste.');
             }
         });
 
         copyBtn.addEventListener('click', async () => {
-            await navigator.clipboard.writeText(htmlContent);
-            const original = copyBtn.textContent;
-            copyBtn.textContent = '✓ Copied';
-            setTimeout(() => copyBtn.textContent = original, 2000);
+            try {
+                await navigator.clipboard.writeText(htmlContent);
+                const original = copyBtn.textContent;
+                copyBtn.textContent = '✓ Copied';
+                setTimeout(() => copyBtn.textContent = original, 2000);
+            } catch (err) {
+                alert('Copy failed. Please select text manually.');
+            }
         });
 
         toggleBtn.addEventListener('click', () => {
@@ -182,14 +191,20 @@
             updateView();
         });
 
+        // Sync content for manual typing or mobile context-menu paste
         codeView.addEventListener('input', () => {
             htmlContent = codeView.value;
+            if (htmlContent.trim()) {
+                handleNewContent(htmlContent);
+            }
         });
 
-        // Global paste listener (handles Ctrl+V even if button is not clicked)
+        // Global listener for keyboard/system paste
         document.addEventListener('paste', (e) => {
-            const text = e.clipboardData.getData('text/plain');
-            handleNewContent(text);
+            const text = (e.clipboardData || window.clipboardData).getData('text');
+            if (text) {
+                handleNewContent(text);
+            }
         });
     </script>
 </body>
