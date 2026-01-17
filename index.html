@@ -2,210 +2,112 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Web Preview Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Previewer</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        body { 
+            font-family: -apple-system, system-ui, sans-serif; 
+            margin: 0; padding: 20px; background: #f4f4f7; 
+            display: flex; justify-content: center;
         }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: #f0f2f5;
-            overflow: hidden; 
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
+        .container { 
+            width: 100%; max-width: 800px; 
+            display: flex; flex-direction: column; gap: 15px; 
         }
-
-        .toolbar {
-            position: relative;
-            background-color: #ffffff;
-            padding: 10px 16px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-shrink: 0;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .toolbar button {
-            padding: 8px 16px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .toolbar button:hover { background-color: #0056b3; }
-        .toolbar button.toggle { background-color: #28a745; }
-        .toolbar button.toggle:hover { background-color: #218838; }
-        .toolbar button:disabled { background-color: #ccc; cursor: not-allowed; }
         
-        .content-container {
-            flex-grow: 1;
-            width: 100%;
-            position: relative;
-            overflow: hidden;
-            background-color: #ffffff;
+        h2 { margin: 0; color: #333; }
+
+        textarea { 
+            width: 100%; height: 400px; padding: 15px; 
+            border: 1px solid #ced4da; border-radius: 8px; 
+            font-family: 'Courier New', monospace; font-size: 16px; 
+            box-sizing: border-box; background: #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
-        .code-view {
-            background-color: #f8f9fa; /* Light theme background */
-            color: #212529; /* Dark text for light theme */
-            padding: 20px;
-            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-            font-size: 15px; 
-            width: 100%;
-            height: 100%;
-            border: none;
-            outline: none;
-            resize: none;
-            display: block;
-            white-space: pre;
-            overflow: auto;
-            -webkit-overflow-scrolling: touch;
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
-        .preview-view {
-            background-color: white;
-            width: 100%;
-            height: 100%;
-            border: none;
-            display: block;
+        button { 
+            flex: 1; min-width: 120px; padding: 16px; 
+            border: none; border-radius: 8px; 
+            font-weight: bold; font-size: 1rem; cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
         }
 
-        .empty-state {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            color: #6c757d;
-            width: 100%;
-            pointer-events: none; /* Let's you click through to the textarea */
-            z-index: 5;
-        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
 
-        .hidden { display: none !important; }
+        button:hover { opacity: 0.9; }
+        button:active { transform: scale(0.99); }
+
+        @media (min-width: 600px) {
+            button { flex: 0 1 auto; padding: 12px 30px; }
+        }
     </style>
 </head>
 <body>
-    <div class="toolbar">
-        <button id="pasteBtn">Paste</button>
-        <button id="copyBtn" disabled>Copy</button>
-        <button id="toggleBtn" class="toggle hidden">Preview</button>
+
+<div class="container">
+    <h2>Code Previewer</h2>
+    <textarea id="code-input" placeholder="Paste your HTML, CSS, and JS here..." autofocus></textarea>
+
+    <div class="button-group">
+        <button class="btn-primary" onclick="openPreview()">Open Preview</button>
+        <button class="btn-secondary" onclick="pasteFromClipboard()">Paste</button>
+        <button class="btn-secondary" onclick="copyToClipboard()">Copy</button>
     </div>
+</div>
 
-    <div class="content-container">
-        <div id="emptyState" class="empty-state">
-            <p>Tap here to paste or click "Paste" button</p>
-        </div>
-        
-        <textarea id="codeView" class="code-view" spellcheck="false" wrap="off"></textarea>
-        
-        <iframe id="previewView" class="preview-view hidden"></iframe>
-    </div>
+<script>
+    let currentBlobURL = null;
+    const codeArea = document.getElementById('code-input');
 
-    <script>
-        let htmlContent = '';
-        let isCodeView = true;
+    function openPreview() {
+        const code = codeArea.value;
 
-        const pasteBtn = document.getElementById('pasteBtn');
-        const copyBtn = document.getElementById('copyBtn');
-        const toggleBtn = document.getElementById('toggleBtn');
-        const emptyState = document.getElementById('emptyState');
-        const codeView = document.getElementById('codeView');
-        const previewView = document.getElementById('previewView');
-
-        function updateView() {
-            if (isCodeView) {
-                codeView.value = htmlContent;
-                codeView.classList.remove('hidden');
-                previewView.classList.add('hidden');
-                toggleBtn.textContent = 'Preview';
-            } else {
-                codeView.classList.add('hidden');
-                previewView.classList.remove('hidden');
-                toggleBtn.textContent = 'Code';
-
-                const doc = previewView.contentDocument || previewView.contentWindow.document;
-                doc.open();
-                doc.write(htmlContent);
-                doc.close();
-            }
+        if (!code.trim()) {
+            alert("Please enter some code first.");
+            return;
         }
 
-        function handleNewContent(text) {
-            if (text && text.trim()) {
-                htmlContent = text;
-                emptyState.classList.add('hidden');
-                copyBtn.disabled = false;
-                toggleBtn.classList.remove('hidden');
-                updateView();
-            }
+        if (currentBlobURL) {
+            URL.revokeObjectURL(currentBlobURL);
         }
 
-        // Updated Robust Paste Logic
-        pasteBtn.addEventListener('click', async () => {
-            try {
-                if (navigator.clipboard && navigator.clipboard.readText) {
-                    const text = await navigator.clipboard.readText();
-                    if (text) {
-                        handleNewContent(text);
-                    } else {
-                        throw new Error('Clipboard empty');
-                    }
-                } else {
-                    throw new Error('Clipboard API restricted');
-                }
-            } catch (err) {
-                console.warn('Programmatic paste failed:', err);
-                // Security fallback: focus the area so the user can paste manually
-                codeView.focus();
-                alert('Browser security requires manual paste. Please press Ctrl+V (Cmd+V) or long-press inside the editor to Paste.');
-            }
-        });
+        const blob = new Blob([code], { type: 'text/html' });
+        currentBlobURL = URL.createObjectURL(blob);
 
-        copyBtn.addEventListener('click', async () => {
-            try {
-                await navigator.clipboard.writeText(htmlContent);
-                const original = copyBtn.textContent;
-                copyBtn.textContent = '✓ Copied';
-                setTimeout(() => copyBtn.textContent = original, 2000);
-            } catch (err) {
-                alert('Copy failed. Please select text manually.');
-            }
-        });
+        const win = window.open(currentBlobURL, '_blank');
+        
+        if (!win) {
+            alert("Pop-up blocked! Please allow pop-ups to open the preview.");
+        }
+    }
 
-        toggleBtn.addEventListener('click', () => {
-            isCodeView = !isCodeView;
-            updateView();
-        });
+    async function pasteFromClipboard() {
+        try {
+            const text = await navigator.clipboard.readText();
+            codeArea.value = text;
+        } catch (err) {
+            alert("Failed to read clipboard. Ensure you granted permissions.");
+        }
+    }
 
-        // Sync content for manual typing or mobile context-menu paste
-        codeView.addEventListener('input', () => {
-            htmlContent = codeView.value;
-            if (htmlContent.trim()) {
-                handleNewContent(htmlContent);
-            }
-        });
+    function copyToClipboard() {
+        const code = codeArea.value;
+        if (!code) return;
 
-        // Global listener for keyboard/system paste
-        document.addEventListener('paste', (e) => {
-            const text = (e.clipboardData || window.clipboardData).getData('text');
-            if (text) {
-                handleNewContent(text);
-            }
+        navigator.clipboard.writeText(code).then(() => {
+            alert("Code copied to clipboard!");
+        }).catch(err => {
+            alert("Failed to copy text.");
         });
-    </script>
+    }
+</script>
+
 </body>
 </html>
