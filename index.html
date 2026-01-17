@@ -23,6 +23,9 @@
             font-family: 'Courier New', monospace; font-size: 16px; 
             box-sizing: border-box; background: #fff;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            /* Disable text wrapping and enable horizontal scroll */
+            white-space: pre;
+            overflow-x: auto;
         }
 
         .button-group {
@@ -44,6 +47,16 @@
         button:hover { opacity: 0.9; }
         button:active { transform: scale(0.99); }
 
+        /* Mobile specific layout for buttons */
+        @media (max-width: 599px) {
+            .btn-primary {
+                flex: 1 1 100%; /* Forces preview button to its own line */
+            }
+            .btn-secondary {
+                flex: 1; /* Keeps paste/copy side-by-side */
+            }
+        }
+
         @media (min-width: 600px) {
             button { flex: 0 1 auto; padding: 12px 30px; }
         }
@@ -52,7 +65,7 @@
 <body>
 
 <div class="container">
-    <h2>Code Previewer</h2>
+    <h2>HTML Previewer</h2>
     <textarea id="code-input" placeholder="Paste your HTML, CSS, and JS here..." autofocus></textarea>
 
     <div class="button-group">
