@@ -2,44 +2,73 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="apple-touch-icon" href="/html-preview/apple-touch-icon.png">
     <link rel="icon" href="/html-preview/apple-touch-icon.png">
     <title>HTML Preview</title>
     <style>
+        /* 1. Ensure the body takes up the full screen height */
+        html, body { 
+            height: 100%; 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; /* Prevents outer page scrolling */
+        }
+
         body { 
             font-family: -apple-system, system-ui, sans-serif; 
-            margin: 0; padding: 20px; background: #f4f4f7; 
-            display: flex; justify-content: center;
+            background: #f4f4f7; 
+            display: flex; 
+            justify-content: center;
         }
+
+        /* 2. Container uses 100dvh (Dynamic Viewport Height) */
         .container { 
-            width: 100%; max-width: 800px; 
-            display: flex; flex-direction: column; gap: 15px; 
+            width: 100%; 
+            max-width: 800px; 
+            height: 100dvh; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+            padding: 15px;
+            box-sizing: border-box; /* Ensures padding doesn't add to height */
         }
         
-        h2 { margin: 0; color: #333; }
+        h2 { margin: 0; color: #333; font-size: 1.2rem; }
 
+        /* 3. Textarea now "grows" to fill remaining space */
         textarea { 
-            width: 100%; height: 400px; padding: 15px; 
-            border: 1px solid #ced4da; border-radius: 8px; 
-            font-family: 'Courier New', monospace; font-size: 16px; 
-            box-sizing: border-box; background: #fff;
+            width: 100%; 
+            flex: 1; /* This is the magic line */
+            padding: 15px; 
+            border: 1px solid #ced4da; 
+            border-radius: 8px; 
+            font-family: 'Courier New', monospace; 
+            font-size: 16px; /* Prevents iOS zoom on focus */
+            box-sizing: border-box; 
+            background: #fff;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            /* Disable text wrapping and enable horizontal scroll */
             white-space: pre;
-            overflow-x: auto;
+            overflow: auto;
+            resize: none; /* Cleaner on mobile */
         }
 
         .button-group {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
+            padding-bottom: 5px; /* Tiny buffer at the bottom */
         }
 
         button { 
-            flex: 1; min-width: 120px; padding: 16px; 
-            border: none; border-radius: 8px; 
-            font-weight: bold; font-size: 1rem; cursor: pointer;
+            flex: 1; 
+            min-width: 80px; 
+            padding: 14px; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            font-size: 1rem; 
+            cursor: pointer;
             transition: background 0.2s, transform 0.1s;
         }
 
@@ -47,16 +76,11 @@
         .btn-secondary { background: #6c757d; color: white; }
 
         button:hover { opacity: 0.9; }
-        button:active { transform: scale(0.99); }
+        button:active { transform: scale(0.98); }
 
-        /* Mobile specific layout for buttons */
         @media (max-width: 599px) {
-            .btn-primary {
-                flex: 1 1 100%; /* Forces preview button to its own line */
-            }
-            .btn-secondary {
-                flex: 1; /* Keeps paste/copy side-by-side */
-            }
+            .btn-primary { flex: 1 1 100%; }
+            .btn-secondary { flex: 1; }
         }
 
         @media (min-width: 600px) {
@@ -83,21 +107,16 @@
 
     function openPreview() {
         const code = codeArea.value;
-
         if (!code.trim()) {
             alert("Please enter some code first.");
             return;
         }
-
         if (currentBlobURL) {
             URL.revokeObjectURL(currentBlobURL);
         }
-
         const blob = new Blob([code], { type: 'text/html' });
         currentBlobURL = URL.createObjectURL(blob);
-
         const win = window.open(currentBlobURL, '_blank');
-        
         if (!win) {
             alert("Pop-up blocked! Please allow pop-ups to open the preview.");
         }
@@ -108,18 +127,17 @@
             const text = await navigator.clipboard.readText();
             codeArea.value = text;
         } catch (err) {
-            alert("Failed to read clipboard. Ensure you granted permissions.");
+            alert("Please use Cmd+V / Ctrl+V or grant permission.");
         }
     }
 
     function copyToClipboard() {
         const code = codeArea.value;
         if (!code) return;
-
         navigator.clipboard.writeText(code).then(() => {
-            alert("Code copied to clipboard!");
+            alert("Code copied!");
         }).catch(err => {
-            alert("Failed to copy text.");
+            alert("Failed to copy.");
         });
     }
 </script>
