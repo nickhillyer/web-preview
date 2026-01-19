@@ -3,89 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="apple-touch-icon" href="/html-preview/apple-touch-icon.png">
-    <link rel="icon" href="/html-preview/apple-touch-icon.png">
     <title>HTML Preview</title>
     <style>
-        /* 1. Ensure the body takes up the full screen height */
-        html, body { 
-            height: 100%; 
-            margin: 0; 
-            padding: 0; 
-            overflow: hidden; /* Prevents outer page scrolling */
-        }
-
-        body { 
-            font-family: -apple-system, system-ui, sans-serif; 
-            background: #f4f4f7; 
-            display: flex; 
-            justify-content: center;
-        }
-
-        /* 2. Container uses 100dvh (Dynamic Viewport Height) */
-        .container { 
-            width: 100%; 
-            max-width: 800px; 
-            height: 100dvh; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 12px; 
-            padding: 15px;
-            box-sizing: border-box; /* Ensures padding doesn't add to height */
-        }
-        
+        /* ... Keep existing body and container styles ... */
+        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: #f4f4f7; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 800px; height: 100dvh; display: flex; flex-direction: column; gap: 12px; padding: 15px; box-sizing: border-box; }
         h2 { margin: 0; color: #333; font-size: 1.2rem; }
-
-        /* 3. Textarea now "grows" to fill remaining space */
-        textarea { 
-            width: 100%; 
-            flex: 1; /* This is the magic line */
-            padding: 15px; 
-            border: 1px solid #ced4da; 
-            border-radius: 8px; 
-            font-family: 'Courier New', monospace; 
-            font-size: 16px; /* Prevents iOS zoom on focus */
-            box-sizing: border-box; 
-            background: #fff;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            white-space: pre;
-            overflow: auto;
-            resize: none; /* Cleaner on mobile */
-        }
-
-        .button-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            padding-bottom: 5px; /* Tiny buffer at the bottom */
-        }
-
-        button { 
-            flex: 1; 
-            min-width: 80px; 
-            padding: 14px; 
-            border: none; 
-            border-radius: 8px; 
-            font-weight: bold; 
-            font-size: 1rem; 
-            cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
-        }
-
+        textarea { width: 100%; flex: 1; padding: 15px; border: 1px solid #ced4da; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 16px; box-sizing: border-box; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); white-space: pre; overflow: auto; resize: none; }
+        .button-group { display: flex; flex-wrap: wrap; gap: 10px; padding-bottom: 5px; }
+        button { flex: 1; min-width: 80px; padding: 14px; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: background 0.2s, transform 0.1s; }
         .btn-primary { background: #007bff; color: white; }
         .btn-secondary { background: #6c757d; color: white; }
 
-        button:hover { opacity: 0.9; }
-        button:active { transform: scale(0.98); }
-
-        @media (max-width: 599px) {
-            .btn-primary { flex: 1 1 100%; }
-            .btn-secondary { flex: 1; }
+        /* --- UPDATED TOP TOAST STYLES --- */
+        #toast {
+            visibility: hidden;
+            min-width: 220px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 8px; /* Square-ish look fits better at top */
+            padding: 12px 20px;
+            position: fixed;
+            z-index: 1000;
+            left: 50%;
+            top: 20px; /* Positioned at the top */
+            transform: translateX(-50%);
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            opacity: 0;
+            transition: opacity 0.3s;
         }
 
-        @media (min-width: 600px) {
-            button { flex: 0 1 auto; padding: 12px 30px; }
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+            animation: slidedown 0.4s ease, fadeout 0.5s 1.5s forwards;
         }
+
+        @keyframes slidedown {
+            from { top: -50px; opacity: 0; }
+            to { top: 20px; opacity: 1; }
+        }
+
+        @keyframes fadeout {
+            from { top: 20px; opacity: 1; }
+            to { top: 20px; opacity: 0; }
+        }
+
+        /* Responsive Tweaks */
+        @media (max-width: 599px) { .btn-primary { flex: 1 1 100%; } .btn-secondary { flex: 1; } }
+        @media (min-width: 600px) { button { flex: 0 1 auto; padding: 12px 30px; } }
     </style>
 </head>
 <body>
@@ -93,7 +62,6 @@
 <div class="container">
     <h2>HTML Preview</h2>
     <textarea id="code-input" placeholder="Paste your HTML, CSS, and JS here..." autofocus></textarea>
-
     <div class="button-group">
         <button class="btn-primary" onclick="openPreview()">Open Preview</button>
         <button class="btn-secondary" onclick="pasteFromClipboard()">Paste</button>
@@ -101,43 +69,54 @@
     </div>
 </div>
 
+<div id="toast"></div>
+
 <script>
     let currentBlobURL = null;
     const codeArea = document.getElementById('code-input');
+    const toast = document.getElementById('toast');
+
+    function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add("show");
+        // Remove the class after the animation duration (2 seconds)
+        setTimeout(() => { 
+            toast.classList.remove("show");
+        }, 2000);
+    }
 
     function openPreview() {
         const code = codeArea.value;
         if (!code.trim()) {
-            alert("Please enter some code first.");
+            showToast("Please enter some code first.");
             return;
         }
-        if (currentBlobURL) {
-            URL.revokeObjectURL(currentBlobURL);
-        }
+        if (currentBlobURL) URL.revokeObjectURL(currentBlobURL);
         const blob = new Blob([code], { type: 'text/html' });
         currentBlobURL = URL.createObjectURL(blob);
         const win = window.open(currentBlobURL, '_blank');
-        if (!win) {
-            alert("Pop-up blocked! Please allow pop-ups to open the preview.");
-        }
+        if (!win) showToast("Pop-up blocked!");
     }
 
     async function pasteFromClipboard() {
         try {
             const text = await navigator.clipboard.readText();
             codeArea.value = text;
+            showToast("Pasted successfully!");
         } catch (err) {
-            alert("Please use Cmd+V / Ctrl+V or grant permission.");
+            showToast("Please use Ctrl+V / Cmd+V");
         }
     }
 
     function copyToClipboard() {
-        const code = codeArea.value;
-        if (!code) return;
-        navigator.clipboard.writeText(code).then(() => {
-            alert("Code copied!");
-        }).catch(err => {
-            alert("Failed to copy.");
+        if (!codeArea.value) {
+            showToast("Nothing to copy!");
+            return;
+        }
+        navigator.clipboard.writeText(codeArea.value).then(() => {
+            showToast("Copied to clipboard!");
+        }).catch(() => {
+            showToast("Failed to copy.");
         });
     }
 </script>
