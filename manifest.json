@@ -1,0 +1,16 @@
+{
+  "id": "/html-preview/",
+  "start_url": "/html-preview/",
+  "name": "HTML Preview",
+  "icons": [
+    {
+      "src": "https://nickhillyer.github.io/html-preview/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "display": "browser",
+  "theme_color": "#f4f4f7",
+  "background_color": "#f4f4f7"
+}
